@@ -36,11 +36,11 @@ def list_to_str(l: list[int]):
 def list_to_num(l: list[int]):
     return int(list_to_str(l), 2)
 
-def num_to_str(n: int):
-    return bin(n)[2:]
+def num_to_str(n: int, strlen: int):
+    return bin(n)[2:].zfill(strlen)
 
-def num_to_list(n: int):
-    return list(map(int, list(num_to_str(n))))
+def num_to_list(n: int, listlen: int):
+    return list(map(int, list(num_to_str(n, listlen))))
 
 def list_multiply(a: list[int], b: list[int]):
     a_num = list_to_num(a)
@@ -48,7 +48,7 @@ def list_multiply(a: list[int], b: list[int]):
     
     mul = module_multiply(a_num, b_num)
 
-    return num_to_list(mul)
+    return num_to_list(mul, len(a))
 
 def list_addition(a: list[int], b: list[int]):
     a_num = list_to_num(a)
@@ -56,7 +56,7 @@ def list_addition(a: list[int], b: list[int]):
     
     mul = module_add(a_num, b_num)
 
-    return num_to_list(mul)
+    return num_to_list(mul, len(a))
 
 def list_xor(a: list[int], b: list[int]):
     result = []
@@ -75,13 +75,12 @@ def srfbc_encrypt(plaintext: list[int], key: list[int]):
             - list[int]
             - len(key) = commons.key_length
     '''
-    
-    rounds_ps = plaintext_splitter(plaintext)
+    psinit = plaintext_splitter(plaintext)
     rounds_ks = key_scheduler(key)
     
-    ps = []
+    ps = psinit
     for i in range(commons.round_count):
-        ps = srfbc_round(rounds_ps[i*4:(i+1)*4], rounds_ks[i*6:(i+1)*6])
+        ps = srfbc_round(ps, rounds_ks[i*6:(i+1)*6])
         
     cs = srfbc_transform(ps, rounds_ks[commons.round_count*6:commons.round_count*6+4])
     ciphertext = ciphertext_packer(cs)
@@ -99,9 +98,10 @@ def key_scheduler(key: list[int]):
     round_keys = [] # list[list[int]]
     step = commons.round_key_length
     
+    rounds_needed_keys = commons.round_key_count * commons.round_count
     turn_keys_count = len(key) // step
     
-    for _ in range(turn_keys_count // commons.round_count):
+    for _ in range(rounds_needed_keys // turn_keys_count):
         for i in range(turn_keys_count):
             round_key = copy.copy(working_key[i*step:(i+1)*step])
             round_keys.append(round_key)
@@ -132,7 +132,7 @@ def srfbc_round(ps: list[list[int]], ks: list[list[int]]) -> list[list[int]]:
     step6 = list_xor(step2, step4)
     step7 = list_multiply(step5, ks[4])
     step8 = list_addition(step6, step7)
-    step9 = list_multiply(step8, ks[6])
+    step9 = list_multiply(step8, ks[5])
     step10 = list_addition(step7, step9)
     step11 = list_xor(step1, step9)
     step12 = list_xor(step3, step9)
