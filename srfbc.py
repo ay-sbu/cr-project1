@@ -2,8 +2,15 @@
 
 import copy
 import commons
+from random import randint
 
 ################################################################## operators 
+def get_random_bin_list(binlen):
+    result = []
+    for i in range(binlen):
+        result.append(randint(0, 1))
+    return result
+
 def plaintext_splitter(plaintext: list[int]):
     step = len(plaintext) // 4
     return [plaintext[0:step], 
@@ -62,6 +69,13 @@ def list_xor(a: list[int], b: list[int]):
     result = []
     for i in range(len(a)):
         result.append(a[i] ^ b[i])
+    return result
+
+def str_to_bin(s:str): # each character 8 bit ascii
+    ns = ''
+    for i in range(len(s)):
+        ns += num_to_str(ord(s[i]), 8)
+    result = list(map(int, list(ns)))
     return result
     
 ################################################################## cryptosystem    
@@ -158,4 +172,27 @@ def srfbc_transform(ps: list[list[int]], ks: list[list[int]]) -> list[list[int]]
 
     return [step1, step2, step3, step4]
     
+def srfbc_cbc(plaintext: str, key: list[int]):
+    stb = str_to_bin(plaintext)
+    iv = get_random_bin_list(commons.block_length)
+    passer = iv
+    ciphertext = []
+    for i in range(len(stb) // commons.block_length):
+        block = stb[i*commons.block_length:(i+1)*commons.block_length]
+        xored = list_xor(passer, block)
+        passer = srfbc_encrypt(xored, key)
+        ciphertext += passer
     
+    return ciphertext
+
+def srfbc_ctr(plaintext: str, key: list[int]):
+    stb = str_to_bin(plaintext)
+    iv = get_random_bin_list(commons.block_length)
+    ciphertext = []
+    for i in range(len(stb) // commons.block_length):
+        block = stb[i*commons.block_length:(i+1)*commons.block_length]
+        la = list_addition(iv, num_to_list(i, commons.block_length))
+        xored = list_xor(block, la)
+        ciphertext += xored
+    return ciphertext
+        
